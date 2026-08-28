@@ -1,6 +1,6 @@
 <?php
 // Controller untuk mengelola data kategori buku.
-require_once __DIR__ . '/../models/Kategori.php';
+require_once __DIR__ . '/../model/Kategori.php';
 
 class KategoriController
 {

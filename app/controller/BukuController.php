@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../models/buku.php';
+require_once __DIR__ . '/../model/Buku.php';
 
 class BukuController
 {
