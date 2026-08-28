@@ -1,30 +1,30 @@
 <?php
 // Controller untuk mengelola data kategori buku.
-require_once __DIR__ . '/../model/Kategori.php';
+require_once __DIR__ . '/../models/Category.php';
 
-class KategoriController
+class CategoryController
 {
-    private $KategoriModel;
+    private $categoryModel;
 
     public function __construct()
     {
-        if (class_exists('Kategori')) {
-            $this->KategoriModel = new Kategori();
+        if (class_exists('Category')) {
+            $this->categoryModel = new Category();
         } else {
-            $this->KategoriModel = null;
+            $this->categoryModel = null;
         }
     }
 
     public function index(): void
     {
         try {
-            if (!$this->KategoriModel) {
+            if (!$this->categoryModel) {
                 $this->respond(false, 'Model kategori belum tersedia', null, 500);
                 return;
             }
 
-            $kategori = $this->KategoriModel->getAll();
-            $this->respond(true, 'Daftar kategori berhasil diambil', $kategori);
+            $categories = $this->categoryModel->getAll();
+            $this->respond(true, 'Daftar kategori berhasil diambil', $categories);
         } catch (\Throwable $e) {
             $this->respond(false, 'Terjadi kesalahan pada server: ' . $e->getMessage(), null, 500);
         }
@@ -33,7 +33,7 @@ class KategoriController
     public function store(array $data): void
     {
         try {
-            if (!$this->KategoriModel) {
+            if (!$this->categoryModel) {
                 $this->respond(false, 'Model kategori belum tersedia', null, 500);
                 return;
             }
@@ -44,16 +44,18 @@ class KategoriController
                 return;
             }
 
-            if ($this->KategoriModel->isNameExists($nama)) {
+            // Cek duplikat dulu SEBELUM insert, supaya tidak menabrak constraint
+            // UNIQUE di database (yang sebelumnya bikin fatal error kalau lolos ke sini).
+            if ($this->categoryModel->isNameExists($nama)) {
                 $this->respond(false, "Kategori \"$nama\" sudah ada", null, 409);
                 return;
             }
 
-            $id = $this->KategoriModel->create($nama);
+            $id = $this->categoryModel->create($nama);
             $this->respond(true, 'Kategori berhasil ditambahkan', ['id' => $id], 201);
         } catch (PDOException $e) {
-        
-        
+            // Lapisan pengaman kedua: kalau ada request lain yang nyaris
+            // bersamaan berhasil insert nama yang sama duluan (race condition).
             $this->respond(false, "Kategori sudah ada", null, 409);
         } catch (\Throwable $e) {
             $this->respond(false, 'Terjadi kesalahan pada server: ' . $e->getMessage(), null, 500);
@@ -63,12 +65,12 @@ class KategoriController
     public function update(int $id, array $data): void
     {
         try {
-            if (!$this->KategoriModel) {
+            if (!$this->categoryModel) {
                 $this->respond(false, 'Model kategori belum tersedia', null, 500);
                 return;
             }
 
-            if (!$this->KategoriModel->getById($id)) {
+            if (!$this->categoryModel->getById($id)) {
                 $this->respond(false, 'Kategori tidak ditemukan', null, 404);
                 return;
             }
@@ -79,12 +81,12 @@ class KategoriController
                 return;
             }
 
-            if ($this->KategoriModel->isNameExists($nama, $id)) {
+            if ($this->categoryModel->isNameExists($nama, $id)) {
                 $this->respond(false, "Kategori \"$nama\" sudah dipakai kategori lain", null, 409);
                 return;
             }
 
-            $this->KategoriModel->update($id, $nama);
+            $this->categoryModel->update($id, $nama);
             $this->respond(true, 'Kategori berhasil diperbarui');
         } catch (PDOException $e) {
             $this->respond(false, "Kategori sudah dipakai kategori lain", null, 409);
@@ -96,17 +98,17 @@ class KategoriController
     public function destroy(int $id): void
     {
         try {
-            if (!$this->KategoriModel) {
+            if (!$this->categoryModel) {
                 $this->respond(false, 'Model kategori belum tersedia', null, 500);
                 return;
             }
 
-            if (!$this->KategoriModel->getById($id)) {
+            if (!$this->categoryModel->getById($id)) {
                 $this->respond(false, 'Kategori tidak ditemukan', null, 404);
                 return;
             }
 
-            $this->KategoriModel->delete($id);
+            $this->categoryModel->delete($id);
             $this->respond(true, 'Kategori berhasil dihapus');
         } catch (PDOException $e) {
             $this->respond(false, 'Kategori masih dipakai oleh buku lain, tidak bisa dihapus', null, 409);

@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/Database.php';
 
 class User
 {
@@ -16,7 +16,7 @@ class User
      */
     public function findByUsername(string $username)
     {
-        $stmt = $this->db->prepare('SELECT * FROM tb_users WHERE username = :username LIMIT 1');
+        $stmt = $this->db->prepare('SELECT * FROM users WHERE username = :username LIMIT 1');
         $stmt->execute(['username' => $username]);
         return $stmt->fetch();
     }
@@ -26,7 +26,7 @@ class User
      */
     public function findById(int $id)
     {
-        $stmt = $this->db->prepare('SELECT id, nama, username, role, created_at FROM tb_users WHERE id = :id LIMIT 1');
+        $stmt = $this->db->prepare('SELECT id, nama, username, role, created_at FROM users WHERE id = :id LIMIT 1');
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();
     }
@@ -36,7 +36,7 @@ class User
         $hashed = password_hash($password, PASSWORD_BCRYPT);
 
         $stmt = $this->db->prepare(
-            'INSERT INTO tb_users (nama, username, password, role) VALUES (:nama, :username, :password, :role)'
+            'INSERT INTO users (nama, username, password, role) VALUES (:nama, :username, :password, :role)'
         );
         $stmt->execute([
             'nama'     => $nama,

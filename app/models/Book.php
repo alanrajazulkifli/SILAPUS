@@ -1,8 +1,8 @@
 <?php
 
-require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/Database.php';
 
-class Buku
+class Book
 {
     private $db;
 
@@ -13,32 +13,32 @@ class Buku
 
     private function baseQuery(): string
     {
-        return 'SELECT tb_buku.*, kategori.nama_kategori
-                FROM tb_buku
-                JOIN kategori ON tb_buku.kategori_id = kategori.id';
+        return 'SELECT books.*, categories.nama_kategori
+                FROM books
+                JOIN categories ON books.category_id = categories.id';
     }
 
-    public function getAll(?string $search = null, ?int $kategoriId = null): array
+    public function getAll(?string $search = null, ?int $categoryId = null): array
     {
         $sql = $this->baseQuery();
         $params = [];
         $conditions = [];
 
         if ($search) {
-            $conditions[] = '(tb_buku.judul LIKE :search OR tb_buku.isbn LIKE :search)';
+            $conditions[] = '(books.judul LIKE :search OR books.isbn LIKE :search)';
             $params['search'] = '%' . $search . '%';
         }
 
-        if ($kategoriId) {
-            $conditions[] = 'tb_buku.kategori_id = :kategori_id';
-            $params['kategori_id'] = $kategoriId;
+        if ($categoryId) {
+            $conditions[] = 'books.category_id = :category_id';
+            $params['category_id'] = $categoryId;
         }
 
         if ($conditions) {
             $sql .= ' WHERE ' . implode(' AND ', $conditions);
         }
 
-        $sql .= ' ORDER BY tb_buku.judul ASC';
+        $sql .= ' ORDER BY books.judul ASC';
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -50,28 +50,28 @@ class Buku
      */
     public function getById(int $id)
     {
-        $stmt = $this->db->prepare($this->baseQuery() . ' WHERE tb_buku.id = :id');
+        $stmt = $this->db->prepare($this->baseQuery() . ' WHERE books.id = :id');
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();
     }
 
     /**
-     * Ambil data tb_buku dengan row lock (FOR UPDATE).
+     * Ambil data buku dengan row lock (FOR UPDATE).
      * Dipakai di dalam transaksi peminjaman agar stok tidak berkurang ganda
-     * kalau ada 2 siswa mengajukan pinjam tb_buku yang sama secara bersamaan.
+     * kalau ada 2 siswa mengajukan pinjam buku yang sama secara bersamaan.
      *
      * @return array|false
      */
     public function getByIdForUpdate(int $id)
     {
-        $stmt = $this->db->prepare('SELECT * FROM tb_buku WHERE id = :id FOR UPDATE');
+        $stmt = $this->db->prepare('SELECT * FROM books WHERE id = :id FOR UPDATE');
         $stmt->execute(['id' => $id]);
         return $stmt->fetch();
     }
 
     public function isIsbnExists(string $isbn, ?int $excludeId = null): bool
     {
-        $sql = 'SELECT id FROM tb_buku WHERE isbn = :isbn';
+        $sql = 'SELECT id FROM books WHERE isbn = :isbn';
         $params = ['isbn' => $isbn];
 
         if ($excludeId) {
@@ -84,29 +84,29 @@ class Buku
         return (bool) $stmt->fetch();
     }
 
-    public function create(string $judul, string $isbn, int $kategoriId, int $stok): int
+    public function create(string $judul, string $isbn, int $categoryId, int $stok): int
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO tb_buku (judul, isbn, kategori_id, stok) VALUES (:judul, :isbn, :kategori_id, :stok)'
+            'INSERT INTO books (judul, isbn, category_id, stok) VALUES (:judul, :isbn, :category_id, :stok)'
         );
         $stmt->execute([
             'judul'       => $judul,
             'isbn'        => $isbn,
-            'kategori_id' => $kategoriId,
+            'category_id' => $categoryId,
             'stok'        => $stok,
         ]);
         return (int) $this->db->lastInsertId();
     }
 
-    public function update(int $id, string $judul, string $isbn, int $kategoriId, int $stok): bool
+    public function update(int $id, string $judul, string $isbn, int $categoryId, int $stok): bool
     {
         $stmt = $this->db->prepare(
-            'UPDATE tb_buku SET judul = :judul, isbn = :isbn, kategori_id = :kategori_id, stok = :stok WHERE id = :id'
+            'UPDATE books SET judul = :judul, isbn = :isbn, category_id = :category_id, stok = :stok WHERE id = :id'
         );
         return $stmt->execute([
             'judul'       => $judul,
             'isbn'        => $isbn,
-            'kategori_id' => $kategoriId,
+            'category_id' => $categoryId,
             'stok'        => $stok,
             'id'          => $id,
         ]);
@@ -114,20 +114,20 @@ class Buku
 
     public function delete(int $id): bool
     {
-        $stmt = $this->db->prepare('DELETE FROM tb_buku WHERE id = :id');
+        $stmt = $this->db->prepare('DELETE FROM books WHERE id = :id');
         return $stmt->execute(['id' => $id]);
     }
 
     public function decreaseStock(int $id): bool
     {
-        $stmt = $this->db->prepare('UPDATE tb_buku SET stok = stok - 1 WHERE id = :id AND stok > 0');
+        $stmt = $this->db->prepare('UPDATE books SET stok = stok - 1 WHERE id = :id AND stok > 0');
         $stmt->execute(['id' => $id]);
         return $stmt->rowCount() > 0; // pastikan baris benar-benar berkurang, bukan cuma query sukses
     }
 
     public function increaseStock(int $id): bool
     {
-        $stmt = $this->db->prepare('UPDATE tb_buku SET stok = stok + 1 WHERE id = :id');
+        $stmt = $this->db->prepare('UPDATE books SET stok = stok + 1 WHERE id = :id');
         $stmt->execute(['id' => $id]);
         return $stmt->rowCount() > 0;
     }

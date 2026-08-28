@@ -1,18 +1,18 @@
 <?php
 
-require_once __DIR__ . '/../model/Loan.php';
-require_once __DIR__ . '/../model/Buku.php';
-require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../models/Loan.php';
+require_once __DIR__ . '/../models/Book.php';
+require_once __DIR__ . '/../../config/Database.php';
 
 class LoanController
 {
     private $loanModel;
-    private $BukuModel;
+    private $bookModel;
 
     public function __construct()
     {
         $this->loanModel = new Loan();
-        $this->BukuModel = new Buku();
+        $this->bookModel = new Book();
     }
 
     /** Semua peminjaman (khusus admin) */
@@ -26,7 +26,7 @@ class LoanController
         $this->respond(true, 'Daftar peminjaman berhasil diambil', $loans);
     }
 
-
+    /** Peminjaman milik user yang sedang login (siswa) */
     public function myLoans(int $userId): void
     {
         $this->loanModel->updateOverdueStatuses();
@@ -37,18 +37,18 @@ class LoanController
         $this->respond(true, 'Riwayat peminjaman berhasil diambil', $loans);
     }
 
-
+    /** Siswa mengajukan pinjam buku */
     public function store(int $userId, array $data): void
     {
-        $BukuId = (int) ($data['buku_id'] ?? 0);
+        $bookId = (int) ($data['book_id'] ?? 0);
 
-        if (!$BukuId) {
+        if (!$bookId) {
             $this->respond(false, 'Buku wajib dipilih', null, 422);
             return;
         }
 
-        $buku = $this->BukuModel->getById($BukuId);
-        if (!$buku) {
+        $book = $this->bookModel->getById($bookId);
+        if (!$book) {
             $this->respond(false, 'Buku tidak ditemukan', null, 404);
             return;
         }
@@ -66,18 +66,19 @@ class LoanController
         try {
             $db->beginTransaction();
 
+            // Kunci baris buku ini supaya tidak ada peminjaman lain yang
+            // mengurangi stok buku yang sama secara bersamaan (race condition).
+            $lockedBook = $this->bookModel->getByIdForUpdate($bookId);
 
-            $lockedBuku = $this->BukuModel->getByIdForUpdate($BukuId);
-
-            if (!$lockedBuku || (int) $lockedBuku['stok'] <= 0) {
+            if (!$lockedBook || (int) $lockedBook['stok'] <= 0) {
                 $db->rollBack();
                 $this->respond(false, 'Stok buku habis', null, 409);
                 return;
             }
 
-            $id = $this->loanModel->create($userId, $BukuId);
+            $id = $this->loanModel->create($userId, $bookId);
 
-            if (!$this->BukuModel->decreaseStock($BukuId)) {
+            if (!$this->bookModel->decreaseStock($bookId)) {
                 $db->rollBack();
                 $this->respond(false, 'Stok buku habis', null, 409);
                 return;
@@ -95,7 +96,7 @@ class LoanController
         $this->respond(true, 'Peminjaman berhasil diajukan', ['id' => $id], 201);
     }
 
-
+    /** Admin menandai buku sudah dikembalikan */
     public function markReturned(int $id): void
     {
         $loan = $this->loanModel->getById($id);
@@ -115,7 +116,7 @@ class LoanController
         try {
             $db->beginTransaction();
             $this->loanModel->markReturned($id);
-            $this->BukuModel->increaseStock($loan['buku_id']);
+            $this->bookModel->increaseStock($loan['book_id']);
             $db->commit();
         } catch (Exception $e) {
             if ($db->inTransaction()) {

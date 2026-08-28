@@ -1,12 +1,10 @@
 <?php
-require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/Database.php';
 
-// LANJUT DI SINI
-
-class Kategori
+class Category
 {
     private $db;
-    private static $fallbackKategori = [
+    private static $fallbackCategories = [
         ['id' => 1, 'nama_kategori' => 'Umum'],
         ['id' => 2, 'nama_kategori' => 'Teknologi'],
     ];
@@ -19,25 +17,25 @@ class Kategori
     public function getAll(): array
     {
         if (!$this->db) {
-            return self::$fallbackKategori;
+            return self::$fallbackCategories;
         }
 
-        $stmt = $this->db->query("SELECT * FROM tb_kategori ORDER BY nama_kategori ASC");
+        $stmt = $this->db->query("SELECT * FROM categories ORDER BY nama_kategori ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getById(int $id)
     {
         if (!$this->db) {
-            foreach (self::$fallbackKategori as $kategori) {
-                if ((int) $kategori['id'] === $id) {
-                    return $kategori;
+            foreach (self::$fallbackCategories as $category) {
+                if ((int) $category['id'] === $id) {
+                    return $category;
                 }
             }
             return null;
         }
 
-        $stmt = $this->db->prepare("SELECT * FROM tb_kategori WHERE id = :id");
+        $stmt = $this->db->prepare("SELECT * FROM categories WHERE id = :id");
         $stmt->execute(['id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -51,18 +49,18 @@ class Kategori
     public function isNameExists(string $namaKategori, ?int $excludeId = null): bool
     {
         if (!$this->db) {
-            foreach (self::$fallbackKategori as $kategori) {
-                if ((int) $kategori['id'] === $excludeId) {
+            foreach (self::$fallbackCategories as $category) {
+                if ((int) $category['id'] === $excludeId) {
                     continue;
                 }
-                if (strtolower($kategori['nama_kategori']) === strtolower($namaKategori)) {
+                if (strtolower($category['nama_kategori']) === strtolower($namaKategori)) {
                     return true;
                 }
             }
             return false;
         }
 
-        $sql = "SELECT id FROM tb_kategori WHERE LOWER(nama_kategori) = LOWER(:nama_kategori)";
+        $sql = "SELECT id FROM categories WHERE LOWER(nama_kategori) = LOWER(:nama_kategori)";
         $params = ['nama_kategori' => $namaKategori];
 
         if ($excludeId !== null) {
@@ -78,12 +76,12 @@ class Kategori
     public function create(string $namaKategori): int
     {
         if (!$this->db) {
-            $id = count(self::$fallbackKategori) + 1;
-            self::$fallbackKategori[] = ['id' => $id, 'nama_kategori' => $namaKategori];
+            $id = count(self::$fallbackCategories) + 1;
+            self::$fallbackCategories[] = ['id' => $id, 'nama_kategori' => $namaKategori];
             return $id;
         }
 
-        $stmt = $this->db->prepare("INSERT INTO tb_kategori (nama_kategori) VALUES (:nama_kategori)");
+        $stmt = $this->db->prepare("INSERT INTO categories (nama_kategori) VALUES (:nama_kategori)");
         $stmt->execute(['nama_kategori' => $namaKategori]);
         return (int)$this->db->lastInsertId();
     }
@@ -91,29 +89,29 @@ class Kategori
     public function update(int $id, string $namaKategori): bool
     {
         if (!$this->db) {
-            foreach (self::$fallbackKategori as &$kategori) {
-                if ((int) $kategori['id'] === $id) {
-                    $kategori['nama_kategori'] = $namaKategori;
+            foreach (self::$fallbackCategories as &$category) {
+                if ((int) $category['id'] === $id) {
+                    $category['nama_kategori'] = $namaKategori;
                     return true;
                 }
             }
             return false;
         }
 
-        $stmt = $this->db->prepare("UPDATE tb_kategori SET nama_kategori = :nama_kategori WHERE id = :id");
+        $stmt = $this->db->prepare("UPDATE categories SET nama_kategori = :nama_kategori WHERE id = :id");
         return $stmt->execute(['nama_kategori' => $namaKategori, 'id' => $id]);
     }
 
     public function delete(int $id): bool
     {
         if (!$this->db) {
-            self::$fallbackKategori = array_values(array_filter(self::$fallbackKategori, function ($kategori) use ($id) {
-                return (int) $kategori['id'] !== $id;
+            self::$fallbackCategories = array_values(array_filter(self::$fallbackCategories, function ($category) use ($id) {
+                return (int) $category['id'] !== $id;
             }));
             return true;
         }
 
-        $stmt = $this->db->prepare("DELETE FROM tb_kategori WHERE id = :id");
+        $stmt = $this->db->prepare("DELETE FROM categories WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     }
 }

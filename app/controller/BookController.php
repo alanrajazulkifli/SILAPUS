@@ -1,35 +1,35 @@
 <?php
 
-require_once __DIR__ . '/../model/Buku.php';
+require_once __DIR__ . '/../models/Book.php';
 
-class BukuController
+class BookController
 {
-    private $BukuModel;
+    private $bookModel;
 
     public function __construct()
     {
-        $this->BukuModel = new buku();
+        $this->bookModel = new Book();
     }
 
     public function index(): void
     {
         $search     = $_GET['search'] ?? null;
-        $kategori = isset($_GET['kategori_id']) ? (int) $_GET['kategori_id'] : null;
+        $categoryId = isset($_GET['category_id']) ? (int) $_GET['category_id'] : null;
 
-        $buku = $this->BukuModel->getAll($search, $kategori);
-        $this->respond(true, 'Daftar buku berhasil diambil', $buku);
+        $books = $this->bookModel->getAll($search, $categoryId);
+        $this->respond(true, 'Daftar buku berhasil diambil', $books);
     }
 
     public function show(int $id): void
     {
-        $buku = $this->BukuModel->getById($id);
+        $book = $this->bookModel->getById($id);
 
-        if (!$buku) {
+        if (!$book) {
             $this->respond(false, 'Buku tidak ditemukan', null, 404);
             return;
         }
 
-        $this->respond(true, 'Detail buku berhasil diambil', $buku);
+        $this->respond(true, 'Detail buku berhasil diambil', $book);
     }
 
     public function store(array $data): void
@@ -40,15 +40,15 @@ class BukuController
             return;
         }
 
-        if ($this->BukuModel->isIsbnExists($data['isbn'])) {
+        if ($this->bookModel->isIsbnExists($data['isbn'])) {
             $this->respond(false, 'ISBN sudah terdaftar', null, 409);
             return;
         }
 
-        $id = $this->BukuModel->create(
+        $id = $this->bookModel->create(
             trim($data['judul']),
             trim($data['isbn']),
-            (int) $data['kategori_id'],
+            (int) $data['category_id'],
             (int) $data['stok']
         );
 
@@ -57,7 +57,7 @@ class BukuController
 
     public function update(int $id, array $data): void
     {
-        if (!$this->BukuModel->getById($id)) {
+        if (!$this->bookModel->getById($id)) {
             $this->respond(false, 'Buku tidak ditemukan', null, 404);
             return;
         }
@@ -68,16 +68,16 @@ class BukuController
             return;
         }
 
-        if ($this->BukuModel->isIsbnExists($data['isbn'], $id)) {
+        if ($this->bookModel->isIsbnExists($data['isbn'], $id)) {
             $this->respond(false, 'ISBN sudah dipakai buku lain', null, 409);
             return;
         }
 
-        $this->BukuModel->update(
+        $this->bookModel->update(
             $id,
             trim($data['judul']),
             trim($data['isbn']),
-            (int) $data['kategori_id'],
+            (int) $data['category_id'],
             (int) $data['stok']
         );
 
@@ -86,12 +86,12 @@ class BukuController
 
     public function destroy(int $id): void
     {
-        if (!$this->BukuModel->getById($id)) {
+        if (!$this->bookModel->getById($id)) {
             $this->respond(false, 'Buku tidak ditemukan', null, 404);
             return;
         }
 
-        $this->BukuModel->delete($id);
+        $this->bookModel->delete($id);
         $this->respond(true, 'Buku berhasil dihapus');
     }
 
@@ -105,7 +105,7 @@ class BukuController
         if (empty(trim($data['isbn'] ?? ''))) {
             $errors[] = 'ISBN wajib diisi';
         }
-        if (empty($data['kategori_id'])) {
+        if (empty($data['category_id'])) {
             $errors[] = 'Kategori wajib dipilih';
         }
         if (!isset($data['stok']) || (int) $data['stok'] < 0) {
