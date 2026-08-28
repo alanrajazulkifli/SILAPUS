@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__ . '/../models/Loan.php';
-require_once __DIR__ . '/../models/Book.php';
+require_once __DIR__ . '/../model/Loan.php';
+require_once __DIR__ . '/../model/Buku.php';
 require_once __DIR__ . '/../../config/db.php';
 
 class LoanController
