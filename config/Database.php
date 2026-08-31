@@ -5,7 +5,7 @@ class Database
     private static $host = 'localhost';
     private static $username = 'root';
     private static $password = 'rpl12345';
-    private static $dbName = 'perpus_kelompok4';
+    private static $dbName = 'db_silapus1';
     private static $charset = 'utf8mb4';
 
     public function __construct()
